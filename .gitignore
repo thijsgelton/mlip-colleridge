@@ -127,3 +127,44 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+Data analysis/
+
+.idea/
+
+annotated_trainig_corpus.csv
+
+annoted_corpus.csv
+
+balanced_conll_formatted_annotated_training_corpus_eval_0.2.txt
+
+balanced_conll_formatted_annotated_training_corpus_train_0.8.txt
+
+balanced_only_bds_conll_formatted_annotated_training_corpus_eval_0.2.txt
+
+balanced_only_bds_conll_formatted_annotated_training_corpus_train_0.8.txt
+
+cache_dir/
+
+Colleridge.rar
+
+Colleridge_CoNLL.rar
+
+conll_formatted_annotated_training_corpus_eval_0.2.txt
+
+conll_formatted_annotated_training_corpus_train_0.8.txt
+
+conll_formatted_annotated_training_corpus.txt
+
+filesystem_spec-master/
+
+outputs/
+
+packages/
+
+src/runs
+
+runs/
+
+src/wandb/
+simpletransformers-0.61.4-py3-none-any.whl
