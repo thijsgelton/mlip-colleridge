@@ -168,3 +168,17 @@ runs/
 
 src/wandb/
 simpletransformers-0.61.4-py3-none-any.whl
+
+cased_conll_formatted_annotated_training_corpus.txt
+
+cased_balanced_only_bds_conll_formatted_annotated_training_corpus_train_0.8.txt
+
+cased_balanced_only_bds_conll_formatted_annotated_training_corpus_eval_0.2.txt
+
+cased_conll_formatted_annotated_training_corpus_eval_0.2.txt
+
+cased_conll_formatted_annotated_training_corpus_train_0.8.txt
+
+*.rar
+
+src/scibert_scivocab_uncased/

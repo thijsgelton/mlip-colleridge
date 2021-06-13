@@ -64,13 +64,13 @@ def read_tags_with_window(file_path):
     return token_docs, tag_docs
 
 
-token_docs, tag_docs = read_tags("../conll_formatted_annotated_training_corpus_train_0.8.txt")
+token_docs, tag_docs = read_tags("../cased_conll_formatted_annotated_training_corpus_train_0.8.txt")
 # class_weights = compute_class_weight('balanced', np.array(['O', 'B-DS', 'I-DS']), [y for x in tag_docs for y in x])
 # print(class_weights)
 # print(np.unique([y for x in tag_docs for y in x], return_counts=True))
 
 
-with open("../balanced_only_bds_conll_formatted_annotated_training_corpus_train_0.8.txt", "w") as f:
+with open("../cased_balanced_only_bds_conll_formatted_annotated_training_corpus_train_0.8.txt", "w") as f:
     for tokens, tags in zip(token_docs, tag_docs):
         f.writelines([f"{token} {tag}\n" for token, tag in zip(tokens, tags)])
         f.write("\n")

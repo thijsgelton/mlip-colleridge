@@ -1,17 +1,19 @@
 import json
 import logging
+import os
 import random
 import re
-import os
-import pandas as pd
+from itertools import chain
+
 import numpy as np
+import pandas as pd
+import torch
 import wandb
 from simpletransformers.ner import NERModel, NERArgs
-from sklearn.preprocessing import MultiLabelBinarizer, LabelEncoder
 from sklearn.metrics import f1_score
 from sklearn.preprocessing import LabelEncoder
-from sklearn.utils import column_or_1d
-from itertools import chain
+from sklearn.preprocessing import MultiLabelBinarizer
+from sklearn.utils import compute_class_weight
 
 random.seed(123)
 np.random.seed(456)
@@ -36,8 +38,8 @@ model_args.use_early_stopping = True
 model_args.early_stopping_delta = 0.0001
 model_args.early_stopping_metric_minimize = True
 model_args.early_stopping_patience = 5
-model_args.evaluate_during_training_steps = 900
-model_args.wandb_project = "roBERTa-colleridge"
+model_args.evaluate_during_training_steps = 800
+model_args.wandb_project = "SciBert-colleridge"
 model_args.wandb_kwargs = {"resume": True}
 model_args.learning_rate = 1e-5
 model_args.custom_parameter_groups = [
@@ -52,14 +54,37 @@ model_args.custom_parameter_groups = [
 ]
 
 custom_labels = ["O", "B-DS", "I-DS"]
+
 rob_ner = NERModel(
-    "roberta", "outputs/best_model", args=model_args, labels=custom_labels
+    "auto", "allenai/scibert_scivocab_uncased", args=model_args, labels=custom_labels,
+    class_weights=torch.tensor([0.36544896, 10.21214971, 6.03437623], dtype=torch.float32)
 )
 print(rob_ner.get_named_parameters())
 
 
 def clean_text(txt):
-    return re.sub('[^A-Za-z0-9]+', ' ', str(txt).lower())
+    return re.sub('[^A-Za-z0-9]+', ' ', str(txt))
+
+
+def jaccard(str1, str2):
+    a = set(str1.lower().split())
+    b = set(str2.lower().split())
+    c = a.intersection(b)
+    return float(len(c)) / (len(a) + len(b) - len(c))
+
+
+def deduplicate(predicted_labels):
+    filtered_pred_labels = []
+    for labels in predicted_labels:
+        filtered = []
+
+        for label in sorted(labels, key=len):
+            label = clean_text(label).lower()
+            if len(filtered) == 0 or all(jaccard(label, got_label) < 0.50 for got_label in filtered):
+                filtered.append(label)
+
+        filtered_pred_labels.append('|'.join(filtered))
+    return filtered_pred_labels
 
 
 if not model_args.use_multiprocessing:
@@ -74,17 +99,18 @@ if not model_args.use_multiprocessing:
         paper_datasets_tags = []
         for pred in predictions:
             pred_tokens, pred_tags = [], []
-            for single in pred:
-                if len({'B-DS', 'I-DS'}.intersection(set(single.values()))) > 0:
-                    pred_tokens.append(list(single.keys())[0])
-                    pred_tags.append(list(single.values())[0])
+            if "B-DS" in [list(single.values())[0] for single in pred]:
+                for single in pred:
+                    if len({'B-DS', 'I-DS'}.intersection(set(single.values()))) > 0:
+                        pred_tokens.append(list(single.keys())[0])
+                        pred_tags.append(list(single.values())[0])
             if len(pred_tokens) > 0 and len(pred_tags) > 0:
                 paper_datasets_tokens.append(pred_tokens)
                 paper_datasets_tags.append(pred_tags)
 
         test_results = test_results.append({'Id': test_json.strip(".json"),
-                                            "PredictionString": "|".join(
-                                                [" ".join(pred) for pred in paper_datasets_tokens])},
+                                            "PredictionString":
+                                                deduplicate([[" ".join(pred) for pred in paper_datasets_tokens]])[0]},
                                            ignore_index=True)
     print(test_results.head(100))
 else:
@@ -113,8 +139,5 @@ else:
     rob_ner.train_model(
         train_data="../balanced_only_bds_conll_formatted_annotated_training_corpus_train_0.8.txt",
         eval_data="../balanced_only_bds_conll_formatted_annotated_training_corpus_eval_0.2.txt",
-        f1=custom_f1,
-        flat_accuracy=flat_accuracy,
+        flat_accuracy=flat_accuracy
     )
-
-    rob_ner.evaluate()
